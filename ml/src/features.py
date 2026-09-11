@@ -31,7 +31,10 @@ def create_features(df: pd.DataFrame) -> pd.DataFrame:
     df['days_of_stock_remaining'] = df['closing_stock'] / (df['avg_dispensed_7d'] + 1e-5)
 
     # 4. Target cleanup: convert to float/numeric, handle empty strings as NaN
-    df['stockout_next_3_days'] = pd.to_numeric(df['stockout_next_3_days'], errors='coerce')
+    if 'stockout_next_1_day' in df.columns:
+        df['stockout_next_1_day'] = pd.to_numeric(df['stockout_next_1_day'], errors='coerce')
+    if 'stockout_next_3_days' in df.columns:
+        df['stockout_next_3_days'] = pd.to_numeric(df['stockout_next_3_days'], errors='coerce')
 
     return df
 

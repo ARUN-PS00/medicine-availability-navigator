@@ -132,18 +132,16 @@ def generate_dataset(output_path, seed=42):
                     "days_since_restock": days_since_restock,
                 })
 
-            # Calculate target stockout_next_3_days
+            # Calculate target stockout_next_1_day (1 if closing stock is 0 on day t+1, else 0)
             for t in range(NUM_DAYS):
-                if t <= NUM_DAYS - 4:
-                    # Look at closing stock for day t+1, t+2, t+3
+                if t <= NUM_DAYS - 2:
+                    # Look at closing stock for day t+1 (next recorded day)
                     st_1 = series_records[t+1]["closing_stock"]
-                    st_2 = series_records[t+2]["closing_stock"]
-                    st_3 = series_records[t+3]["closing_stock"]
-                    target = 1 if (st_1 == 0 or st_2 == 0 or st_3 == 0) else 0
+                    target = 1 if st_1 == 0 else 0
                 else:
-                    # Edge case: last 3 days don't have full 3-day horizon
+                    # Edge case: last recorded day doesn't have a next day horizon
                     target = ""
-                series_records[t]["stockout_next_3_days"] = target
+                series_records[t]["stockout_next_1_day"] = target
 
             all_rows.extend(series_records)
 
@@ -156,7 +154,7 @@ def generate_dataset(output_path, seed=42):
         "date", "facility_id", "facility_name", "facility_type",
         "latitude", "longitude", "medicine_id", "medicine_name",
         "opening_stock", "received_quantity", "dispensed_quantity",
-        "closing_stock", "days_since_restock", "stockout_next_3_days"
+        "closing_stock", "days_since_restock", "stockout_next_1_day"
     ]
 
     with open(output_path, "w", newline="", encoding="utf-8") as f:

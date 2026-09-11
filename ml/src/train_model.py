@@ -35,9 +35,9 @@ def train_and_evaluate():
     print("Engineering features (rolling stats, trend, stock remaining)...")
     processed_df = create_features(raw_df)
 
-    # 3. Filter out NaN targets (last 3 days of time series)
-    labeled_df = processed_df.dropna(subset=['stockout_next_3_days']).copy()
-    labeled_df['stockout_next_3_days'] = labeled_df['stockout_next_3_days'].astype(int)
+    # 3. Filter out NaN targets (last 1 day of time series)
+    labeled_df = processed_df.dropna(subset=['stockout_next_1_day']).copy()
+    labeled_df['stockout_next_1_day'] = labeled_df['stockout_next_1_day'].astype(int)
     print(f"Labeled dataset shape (after excluding NaN targets): {labeled_df.shape}")
 
     # 4. Chronological Train/Test Split
@@ -66,10 +66,10 @@ def train_and_evaluate():
     num_cols = get_numerical_columns()
 
     X_train = train_df[feature_cols]
-    y_train = train_df['stockout_next_3_days']
+    y_train = train_df['stockout_next_1_day']
 
     X_test = test_df[feature_cols]
-    y_test = test_df['stockout_next_3_days']
+    y_test = test_df['stockout_next_1_day']
 
     # Class Distributions
     train_dist = y_train.value_counts(normalize=True).to_dict()

@@ -23,7 +23,7 @@ RISK_THRESHOLD = 0.50
 def predict_stockout(facility_id: str, medicine_id: str, model_pipeline: Any) -> Dict[str, Any]:
     """
     Retrieves historical inventory for (facility_id, medicine_id) from Supabase,
-    reconstructs features using ml/src/features.py, and computes 3-day stockout risk prediction.
+    reconstructs features using ml/src/features.py, and computes next-day stockout risk prediction.
     """
     if model_pipeline is None:
         raise HTTPException(
@@ -73,7 +73,7 @@ def predict_stockout(facility_id: str, medicine_id: str, model_pipeline: Any) ->
     df["facility_type"] = facility_info["type"]
     df["medicine_id"] = medicine_id
     # Target placeholder so features.py target cleanup doesn't fail
-    df["stockout_next_3_days"] = np.nan
+    df["stockout_next_1_day"] = np.nan
 
     # 5. Run exact feature engineering logic from ml/src/features.py
     featured_df = create_features(df)

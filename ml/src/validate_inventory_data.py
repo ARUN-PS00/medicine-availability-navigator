@@ -87,14 +87,14 @@ def validate_dataset(file_path):
     print(f"\n--- Stock-out Statistics (Today's Closing Stock == 0) ---")
     print(f"Total Stock-out Days: {stockout_rows} / {total_rows} ({stockout_pct:.2f}%)")
 
-    # 7. Target Column Distribution (stockout_next_3_days)
+    # 7. Target Column Distribution (stockout_next_1_day)
     target_0 = 0
     target_1 = 0
     target_blank = 0
     target_1_when_closing_gt_0 = 0
 
     for r in rows:
-        val = r["stockout_next_3_days"].strip()
+        val = r["stockout_next_1_day"].strip()
         cl = int(r["closing_stock"])
         if val == "0":
             target_0 += 1
@@ -108,12 +108,12 @@ def validate_dataset(file_path):
     labeled_total = target_0 + target_1
     target_1_pct = (target_1 / labeled_total * 100) if labeled_total > 0 else 0
 
-    print(f"\n--- Target Distribution (stockout_next_3_days) ---")
-    print(f"Target = 0 (No stockout next 3 days): {target_0} ({target_0 / labeled_total * 100:.2f}%)")
-    print(f"Target = 1 (Stockout in next 3 days): {target_1} ({target_1_pct:.2f}%)")
-    print(f"Target = Blank / Excluded (Last 3 days of time series): {target_blank}")
+    print(f"\n--- Target Distribution (stockout_next_1_day) ---")
+    print(f"Target = 0 (No stockout next day): {target_0} ({target_0 / labeled_total * 100:.2f}%)")
+    print(f"Target = 1 (Stockout on next day t+1): {target_1} ({target_1_pct:.2f}%)")
+    print(f"Target = Blank / Excluded (Last day of time series): {target_blank}")
     print(f"Target = 1 when Closing Stock TODAY is > 0: {target_1_when_closing_gt_0} rows")
-    print(f"  --> Demonstrates non-trivial target (future stockouts predicted before stock reaches 0!)")
+    print(f"  --> Demonstrates non-trivial target (next-day stockouts predicted before stock reaches 0!)")
 
     # 8. Date Range
     dates = sorted(list(set(r["date"] for r in rows)))

@@ -12,7 +12,7 @@ VALID_CSV_HEADER = "date,facility_id,facility_name,facility_type,latitude,longit
 VALID_ROW_1 = "2024-07-01,F001,Hospital F001,PHC,12.9716,77.5946,M001,Paracetamol,100,0,10,90,1"
 VALID_ROW_2 = "2024-07-02,F001,Hospital F001,PHC,12.9716,77.5946,M001,Paracetamol,90,0,10,80,2"
 
-VALID_CSV_WITH_TARGET = VALID_CSV_HEADER + ",stockout_next_3_days\n" + VALID_ROW_1 + ",1\n"
+VALID_CSV_WITH_TARGET = VALID_CSV_HEADER + ",stockout_next_1_day\n" + VALID_ROW_1 + ",1\n"
 
 
 def test_upload_valid_csv_success():
@@ -127,7 +127,7 @@ def test_upload_malformed_missing_columns():
         mock_supabase.table.assert_not_called()
 
 
-def test_upload_stockout_next_3_days_exclusion():
+def test_upload_target_exclusion():
     file_bytes = VALID_CSV_WITH_TARGET.encode("utf-8")
 
     with patch("backend.importer.get_supabase_client") as mock_get_supabase:
@@ -150,7 +150,7 @@ def test_upload_stockout_next_3_days_exclusion():
                 break
 
         assert len(inserted_payloads) == 1
-        assert "stockout_next_3_days" not in inserted_payloads[0]
+        assert "stockout_next_1_day" not in inserted_payloads[0]
 
 
 def test_upload_idempotency_upsert():

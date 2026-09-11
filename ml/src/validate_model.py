@@ -40,12 +40,12 @@ def validate_model():
     # Feature Engineering
     processed_df = create_features(raw_df)
 
-    # Exclude unlabeled rows (final 3 days of each time series)
-    unlabeled_count = processed_df['stockout_next_3_days'].isna().sum()
-    labeled_df = processed_df.dropna(subset=['stockout_next_3_days']).copy()
-    labeled_df['stockout_next_3_days'] = labeled_df['stockout_next_3_days'].astype(int)
+    # Exclude unlabeled rows (final day of each time series)
+    unlabeled_count = processed_df['stockout_next_1_day'].isna().sum()
+    labeled_df = processed_df.dropna(subset=['stockout_next_1_day']).copy()
+    labeled_df['stockout_next_1_day'] = labeled_df['stockout_next_1_day'].astype(int)
 
-    # Chronological Split (Train < 2024-05-21, Test >= 2024-05-21)
+    # Chronological Split
     unique_dates = sorted(labeled_df['date'].unique())
     split_idx = int(len(unique_dates) * 0.80)
     split_date = unique_dates[split_idx]
@@ -57,8 +57,8 @@ def validate_model():
     cat_cols = get_categorical_columns()
     num_cols = get_numerical_columns()
 
-    X_train, y_train = train_df[feature_cols], train_df['stockout_next_3_days']
-    X_test, y_test = test_df[feature_cols], test_df['stockout_next_3_days']
+    X_train, y_train = train_df[feature_cols], train_df['stockout_next_1_day']
+    X_test, y_test = test_df[feature_cols], test_df['stockout_next_1_day']
 
     print("\n--- Dataset & Split Sanity Checks ---")
     print(f"Total Raw Rows     : {len(raw_df)}")
@@ -69,9 +69,9 @@ def validate_model():
     print(f"Train Targets      : 0={sum(y_train==0)} ({sum(y_train==0)/len(y_train):.2%}), 1={sum(y_train==1)} ({sum(y_train==1)/len(y_train):.2%})")
     print(f"Test Targets       : 0={sum(y_test==0)} ({sum(y_test==0)/len(y_test):.2%}), 1={sum(y_test==1)} ({sum(y_test==1)/len(y_test):.2%})")
 
-    # 2. Evaluate Original P3 Model
+    # 2. Evaluate Retrained 1-Day Model
     print("\n" + "=" * 75)
-    print(" 2. ORIGINAL RANDOM FOREST MODEL PERFORMANCE ")
+    print(" 2. RETRAINED 1-DAY RANDOM FOREST MODEL PERFORMANCE ")
     print("=" * 75)
 
     y_pred_ml = saved_model.predict(X_test)
@@ -91,12 +91,12 @@ def validate_model():
     print(f"ROC-AUC  : {auc_ml:.4f}")
     print(f"Confusion Matrix:\n  [TN={cm_ml[0][0]:<5}  FP={cm_ml[0][1]:<5}]\n  [FN={cm_ml[1][0]:<5}  TP={cm_ml[1][1]:<5}]")
 
-    # 3. Simple Heuristic Baseline (days_of_stock_remaining <= 3)
+    # 3. Simple Heuristic Baseline (days_of_stock_remaining <= 1.0)
     print("\n" + "=" * 75)
-    print(" 3. SIMPLE NON-ML BASELINE (days_of_stock_remaining <= 3) ")
+    print(" 3. SIMPLE NON-ML BASELINE (days_of_stock_remaining <= 1.0) ")
     print("=" * 75)
 
-    y_pred_base = (X_test['days_of_stock_remaining'] <= 3.0).astype(int)
+    y_pred_base = (X_test['days_of_stock_remaining'] <= 1.0).astype(int)
     # Continuous proxy for AUC: inverse of days remaining
     y_score_base = -X_test['days_of_stock_remaining']
 

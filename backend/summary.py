@@ -87,7 +87,7 @@ def get_dashboard_summary(model_pipeline: Any) -> Dict[str, Any]:
 
     df = pd.DataFrame(inv_res.data)
     df["facility_type"] = df["facility_id"].map(lambda fid: facility_meta.get(fid, {}).get("type", "Unknown"))
-    df["stockout_next_3_days"] = np.nan
+    df["stockout_next_1_day"] = np.nan
 
     # 5. Vectorized feature creation using exact ml/src/features.py pipeline
     featured_df = create_features(df)

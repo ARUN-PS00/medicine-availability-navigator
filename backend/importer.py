@@ -130,7 +130,7 @@ def validate_and_parse_csv_content(csv_content: Union[str, io.StringIO], batch_n
             )
             continue
 
-        # Rule 4: Construct payload (explicitly excluding stockout_next_3_days)
+        # Rule 4: Construct payload (explicitly excluding target columns like stockout_next_1_day)
         inventory_records.append({
             "facility_id": fac_id,
             "medicine_id": med_id,
