@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  <title>Medicine Availability Navigator (MAP) | Real-Time Stock & Telemetry</title>
+  <meta name="description" content="Discover essential medicine availability, AI-powered stockout early warnings, and verified pharmacy navigation across public health facilities.">
+  <meta name="theme-color" content="#0d9488">
+
+  <!-- Open Graph & Social Cards -->
+  <meta property="og:title" content="Medicine Availability Navigator (MAP)">
+  <meta property="og:description" content="Real-time medicine stock tracking and shortage forecasting across public healthcare facilities.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Application Stylesheets -->
+  <link rel="stylesheet" href="./assets/css/main.css">
+  <link rel="stylesheet" href="./assets/css/components.css">
+  <link rel="stylesheet" href="./assets/css/layout.css">
+  <link rel="stylesheet" href="./assets/css/pages.css">
+
+  <!-- Favicon / Brand Icon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230d9488'><path d='M12 2v20M2 12h20'/></svg>">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Sticky Header Navigation -->
+    <div id="navbar-container"></div>
+
+    <!-- Main Dynamic Application Content -->
+    <main id="main-content" role="main" aria-live="polite">
+      <!-- Pages are dynamically rendered here by the router -->
+    </main>
+
+    <!-- Mobile Bottom Navigation (Visible on mobile/tablet) -->
+    <div id="mobile-nav-container"></div>
+
+    <!-- Footer -->
+    <div id="footer-container"></div>
+
+    <!-- Accessible Modal Container -->
+    <div id="modal-container"></div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- Application Entry Point -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
