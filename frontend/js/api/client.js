@@ -65,13 +65,28 @@ class ApiClient {
     }
   }
 
-  // Facilities
-  async getFacilities(type = null) {
+  // Calculate Haversine Distance in Kilometers (client-side display only)
+  calculateDistance(lat1, lon1, lat2, lon2) {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10;
+  }
+
+  // Facilities with user location synthetic demo coordinates & Haversine distance calculation
+  async getFacilities(type = null, userLat = null, userLng = null) {
+    let facilitiesList = [];
     try {
       const endpoint = type ? `/facilities?type=${encodeURIComponent(type)}` : '/facilities';
       const data = await this.fetchWithTimeout(endpoint);
       // Merge with address & open_hours if available
-      return data.map(f => {
+      facilitiesList = data.map(f => {
         const mockMatch = MOCK_FACILITIES.find(m => m.id === f.id);
         return {
           ...f,
@@ -83,10 +98,43 @@ class ApiClient {
     } catch (e) {
       console.info("[MAP API Client] Using mock facilities (backend offline or unconfigured).");
       if (type) {
-        return MOCK_FACILITIES.filter(f => f.type.toLowerCase() === type.toLowerCase());
+        facilitiesList = MOCK_FACILITIES.filter(f => f.type.toLowerCase() === type.toLowerCase());
+      } else {
+        facilitiesList = MOCK_FACILITIES;
       }
-      return MOCK_FACILITIES;
     }
+
+    // Deterministic synthetic offsets for demonstration (placed 1km to 10km around user location)
+    const DEMO_OFFSETS = [
+      { latOffset: +0.008, lngOffset: +0.006 }, // ~0.9 km
+      { latOffset: -0.012, lngOffset: +0.010 }, // ~1.8 km
+      { latOffset: +0.018, lngOffset: -0.014 }, // ~2.5 km
+      { latOffset: -0.022, lngOffset: -0.018 }, // ~3.2 km
+      { latOffset: +0.030, lngOffset: +0.024 }, // ~4.3 km
+      { latOffset: -0.036, lngOffset: +0.030 }, // ~5.2 km
+      { latOffset: +0.044, lngOffset: -0.036 }, // ~6.3 km
+      { latOffset: -0.052, lngOffset: -0.042 }, // ~7.4 km
+      { latOffset: +0.060, lngOffset: +0.050 }, // ~8.6 km
+      { latOffset: -0.068, lngOffset: +0.056 }  // ~9.8 km
+    ];
+
+    if (userLat !== null && userLng !== null) {
+      facilitiesList = facilitiesList.map((fac, idx) => {
+        const offset = DEMO_OFFSETS[idx % DEMO_OFFSETS.length];
+        const synLat = userLat + offset.latOffset;
+        const synLng = userLng + offset.lngOffset;
+        const dist = this.calculateDistance(userLat, userLng, synLat, synLng);
+
+        return {
+          ...fac,
+          latitude: synLat,
+          longitude: synLng,
+          distance_km: dist
+        };
+      });
+    }
+
+    return facilitiesList;
   }
 
   // Medicines catalog

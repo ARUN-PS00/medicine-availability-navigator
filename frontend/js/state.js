@@ -128,6 +128,77 @@ class AppState {
     this.save(KEY_NOTIFICATIONS, []);
     this.emit('notifications_changed', []);
   }
+
+  // Location Management (Browser Geolocation API)
+  // Fallback demo center: 12.9716, 77.5946 (Demo Network Coordinates)
+  getLocationState() {
+    if (!this.locationState) {
+      this.locationState = {
+        lat: 12.9716,
+        lng: 77.5946,
+        label: "Location unavailable — showing demo pharmacies",
+        isFallback: true,
+        status: 'DEFAULT', // 'DEFAULT', 'LOADING', 'GRANTED', 'DENIED', 'UNAVAILABLE'
+        error: null
+      };
+    }
+    return { ...this.locationState };
+  }
+
+  setLocationState(newLocation) {
+    this.locationState = { ...this.getLocationState(), ...newLocation };
+    this.emit('location_changed', this.locationState);
+  }
+
+  async requestUserLocation() {
+    this.setLocationState({ status: 'LOADING', error: null, label: 'Acquiring GPS location...' });
+
+    if (!navigator.geolocation) {
+      this.setLocationState({
+        status: 'UNAVAILABLE',
+        isFallback: true,
+        label: "Location unavailable — showing demo pharmacies",
+        error: "Browser does not support Geolocation"
+      });
+      return this.getLocationState();
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          
+          console.log("BROWSER USER LOCATION:", latitude, longitude);
+
+          const loc = {
+            lat: latitude,
+            lng: longitude,
+            label: `GPS (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
+            isFallback: false,
+            status: 'GRANTED',
+            error: null
+          };
+          this.setLocationState(loc);
+          resolve(loc);
+        },
+        (err) => {
+          console.warn("[MAP Geolocation] Location access denied or unavailable:", err.message);
+          const loc = {
+            lat: 12.9716,
+            lng: 77.5946,
+            label: "Location unavailable — showing demo pharmacies",
+            isFallback: true,
+            status: err.code === 1 ? 'DENIED' : 'UNAVAILABLE',
+            error: err.message || "Location permission denied"
+          };
+          this.setLocationState(loc);
+          resolve(loc);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }
 }
 
 export const state = new AppState();
