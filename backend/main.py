@@ -1,13 +1,21 @@
 import os
 import joblib
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status, Query, UploadFile, File
+from typing import Optional
+from fastapi import FastAPI, HTTPException, status, Query, UploadFile, File, Depends
 from fastapi.responses import JSONResponse
 
-from backend.database import get_supabase_client
+from backend.database import get_supabase_client, get_supabase_service_client
 from backend.prediction import predict_stockout
 from backend.summary import get_dashboard_summary
 from backend.importer import import_inventory_csv, CSVImportError
+from backend.auth import (
+    PharmacyUser,
+    get_current_pharmacy_user,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+)
 
 # Determine paths relative to this file
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +51,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Medicine Availability Navigator API",
-    description="FastAPI backend for predicting medicine stockouts and navigating supply availability.",
+    description="FastAPI backend for predicting medicine stockouts and navigating supply availability with Pharmacy Supabase Auth.",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -57,8 +65,190 @@ def health_check():
     }
 
 
+# ------------------------------------------------------------------------------
+# AUTHENTICATION ENDPOINTS (Supabase Auth)
+# ------------------------------------------------------------------------------
+
+@app.post("/auth/login")
+def login(request: LoginRequest):
+    """
+    Pharmacy Login endpoint using Supabase Auth.
+    Authenticates user with email and password, returning session token and authorized facility info.
+    """
+    try:
+        supabase = get_supabase_client()
+        res = supabase.auth.sign_in_with_password({
+            "email": request.email,
+            "password": request.password
+        })
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid email or password: {str(e)}"
+        )
+
+    if not res or not res.session or not res.user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password."
+        )
+
+    user_id = str(res.user.id)
+    access_token = res.session.access_token
+    refresh_token = res.session.refresh_token
+
+    # Resolve pharmacy profile
+    service_client = get_supabase_service_client()
+    profile_res = (
+        service_client.table("pharmacy_profiles")
+        .select("facility_id, facilities(name)")
+        .eq("id", user_id)
+        .execute()
+    )
+
+    if not profile_res.data:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is not associated with an authorized pharmacy profile."
+        )
+
+    facility_id = profile_res.data[0].get("facility_id")
+    facility_info = profile_res.data[0].get("facilities")
+    facility_name = facility_info.get("name") if isinstance(facility_info, dict) else None
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user_id,
+            "email": res.user.email,
+            "facility_id": facility_id,
+            "facility_name": facility_name
+        }
+    }
+
+
+
+@app.post("/auth/register", status_code=status.HTTP_201_CREATED)
+def register_pharmacy(request: RegisterRequest):
+    """
+    Registers a new pharmacy user linked to an existing MAP facility.
+    Maps auth.users.id -> existing MAP facilities.id.
+    """
+    supabase = get_supabase_client()
+    service_client = get_supabase_service_client()
+
+    # 1. Verify facility existence
+    fac_res = supabase.table("facilities").select("id, name").eq("id", request.facility_id).execute()
+    if not fac_res.data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Facility '{request.facility_id}' not found in MAP records."
+        )
+    facility_name = fac_res.data[0]["name"]
+
+    # 2. Check if facility is already linked to a user profile
+    existing_prof = service_client.table("pharmacy_profiles").select("id").eq("facility_id", request.facility_id).execute()
+    if existing_prof.data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Facility '{request.facility_id}' is already registered to an existing account."
+        )
+
+    # 3. Create Supabase Auth user
+    try:
+        auth_res = supabase.auth.sign_up({
+            "email": request.email,
+            "password": request.password
+        })
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Supabase Auth signup failed: {str(e)}"
+        )
+
+    if not auth_res.user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to create pharmacy account."
+        )
+
+    user_id = str(auth_res.user.id)
+
+    # 4. Insert pharmacy profile mapping
+    try:
+        service_client.table("pharmacy_profiles").insert({
+            "id": user_id,
+            "facility_id": request.facility_id,
+            "email": request.email
+        }).execute()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create pharmacy profile mapping: {str(e)}"
+        )
+
+    return {
+        "status": "success",
+        "message": "Pharmacy account registered successfully.",
+        "user": {
+            "user_id": user_id,
+            "email": request.email,
+            "facility_id": request.facility_id,
+            "facility_name": facility_name
+        }
+    }
+
+
+@app.post("/auth/logout")
+def logout(current_user: PharmacyUser = Depends(get_current_pharmacy_user)):
+    """
+    Logs out the current authenticated pharmacy session.
+    """
+    try:
+        supabase = get_supabase_client()
+        supabase.auth.sign_out()
+    except Exception:
+        pass
+    return {
+        "status": "success",
+        "message": "Session logged out successfully."
+    }
+
+
+@app.post("/auth/forgot-password")
+def forgot_password(request: ResetPasswordRequest):
+    """
+    Triggers a password reset request via Supabase Auth.
+    """
+    try:
+        supabase = get_supabase_client()
+        supabase.auth.reset_password_for_email(request.email)
+    except Exception:
+        pass
+    return {
+        "status": "success",
+        "message": "If an account with this email exists, a password reset email has been sent."
+    }
+
+
+@app.get("/auth/me")
+def get_me(current_user: PharmacyUser = Depends(get_current_pharmacy_user)):
+    """
+    Returns the currently authenticated pharmacy user details and authorized facility context.
+    """
+    return {
+        "status": "success",
+        "user": current_user
+    }
+
+
+# ------------------------------------------------------------------------------
+# PUBLIC CLIENT ENDPOINTS (Preserved)
+# ------------------------------------------------------------------------------
+
 @app.get("/facilities")
-def get_facilities(type: str | None = Query(None, description="Optional facility type filter")):
+def get_facilities(type: Optional[str] = Query(None, description="Optional facility type filter")):
     """
     Returns list of facilities (id, name, type, latitude, longitude), optionally filtered by type.
     """
@@ -137,7 +327,6 @@ def get_inventory(facility_id: str, medicine_id: str, days: int = Query(30)):
         )
 
         raw_history = inv_res.data if inv_res.data else []
-        # Return in chronological order (date ASC)
         chronological_history = list(reversed(raw_history))
 
         return {
@@ -183,12 +372,58 @@ def get_summary():
     return get_dashboard_summary(model)
 
 
-@app.post("/admin/inventory/upload")
-async def upload_inventory_csv(file: UploadFile = File(...)):
+# ------------------------------------------------------------------------------
+# PROTECTED PHARMACY INVENTORY ENDPOINTS
+# ------------------------------------------------------------------------------
+
+@app.get("/pharmacy/inventory/{target_facility_id}")
+def get_pharmacy_facility_inventory(
+    target_facility_id: str,
+    current_user: PharmacyUser = Depends(get_current_pharmacy_user)
+):
     """
-    Admin endpoint for uploading new or updated inventory CSV records.
-    Validates CSV header structure, quantities, accounting equation balance,
-    and intra-CSV duplicate keys before performing any database writes.
+    Protected endpoint allowing an authenticated pharmacy to retrieve facility inventory.
+    Strictly verifies that current_user.facility_id matches target_facility_id (Pharmacy A cannot access Pharmacy B's inventory).
+    """
+    if current_user.facility_id != target_facility_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Access denied. Your account is authorized for facility '{current_user.facility_id}', not '{target_facility_id}'."
+        )
+
+    try:
+        supabase = get_supabase_client()
+        inv_res = (
+            supabase.table("inventory")
+            .select("date, medicine_id, opening_stock, received_quantity, dispensed_quantity, closing_stock, days_since_restock")
+            .eq("facility_id", target_facility_id)
+            .order("date", desc=True)
+            .execute()
+        )
+        return {
+            "status": "success",
+            "facility_id": current_user.facility_id,
+            "facility_name": current_user.facility_name,
+            "record_count": len(inv_res.data) if inv_res.data else 0,
+            "inventory": inv_res.data if inv_res.data else []
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database error retrieving pharmacy inventory: {str(e)}"
+        )
+
+
+@app.post("/admin/inventory/upload")
+@app.post("/pharmacy/inventory/upload")
+async def upload_inventory_csv(
+    file: UploadFile = File(...),
+    current_user: PharmacyUser = Depends(get_current_pharmacy_user)
+):
+    """
+    Protected endpoint for uploading inventory CSV records.
+    Validates CSV header structure, quantities, accounting balance, intra-CSV duplicates,
+    AND verifies that all records belong strictly to the authenticated pharmacy's facility_id.
     """
     if not file.filename.endswith(".csv"):
         return JSONResponse(
@@ -214,7 +449,8 @@ async def upload_inventory_csv(file: UploadFile = File(...)):
         )
 
     try:
-        result = import_inventory_csv(csv_str)
+        # Enforce authorized_facility_id from authenticated user context
+        result = import_inventory_csv(csv_str, authorized_facility_id=current_user.facility_id)
     except CSVImportError as e:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -243,6 +479,7 @@ async def upload_inventory_csv(file: UploadFile = File(...)):
     return {
         "status": "success",
         "message": "Inventory upload completed successfully.",
+        "authorized_facility_id": current_user.facility_id,
         "facilities_processed": result["facilities_upserted"],
         "medicines_processed": result["medicines_upserted"],
         "inventory_rows_processed": result["inventory_records_upserted"]

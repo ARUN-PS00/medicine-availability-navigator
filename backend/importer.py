@@ -2,7 +2,7 @@ import csv
 import io
 import os
 import sys
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Union, Optional
 
 # Ensure project root is in sys.path for backend imports
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,10 +36,14 @@ class CSVImportError(Exception):
     pass
 
 
-def validate_and_parse_csv_content(csv_content: Union[str, io.StringIO], batch_name: str = "CSV"):
+def validate_and_parse_csv_content(
+    csv_content: Union[str, io.StringIO],
+    batch_name: str = "CSV",
+    authorized_facility_id: Optional[str] = None,
+):
     """
     Validates CSV header structure, row data types, negative quantities,
-    inventory accounting equation integrity, and duplicate detection.
+    inventory accounting equation integrity, duplicate detection, and optional facility authorization.
 
     Returns:
         tuple: (facilities_list, medicines_list, inventory_records, validation_errors)
@@ -69,6 +73,13 @@ def validate_and_parse_csv_content(csv_content: Union[str, io.StringIO], batch_n
 
         if not fac_id or not med_id or not date_str:
             validation_errors.append(f"Row {row_idx}: Missing required identifier (facility_id, medicine_id, or date).")
+            continue
+
+        # Rule 0: Enforce authorization scope if provided (Pharmacy A cannot modify Pharmacy B's inventory)
+        if authorized_facility_id and fac_id != authorized_facility_id:
+            validation_errors.append(
+                f"Row {row_idx}: Unauthorized facility '{fac_id}' in CSV. Your account is authorized for '{authorized_facility_id}' only."
+            )
             continue
 
         # Rule 1: Detect and report duplicate (facility_id, medicine_id, date) within the CSV
@@ -153,6 +164,7 @@ def validate_and_parse_csv_content(csv_content: Union[str, io.StringIO], batch_n
 def import_inventory_csv(
     csv_file_or_path: Union[str, io.StringIO],
     batch_size: int = DEFAULT_BATCH_SIZE,
+    authorized_facility_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Reusable import function that processes inventory CSV data.
@@ -171,7 +183,7 @@ def import_inventory_csv(
         batch_name = "Uploaded CSV Stream"
 
     facilities, medicines, inventory_records, validation_errors = validate_and_parse_csv_content(
-        csv_str, batch_name=batch_name
+        csv_str, batch_name=batch_name, authorized_facility_id=authorized_facility_id
     )
 
     # STRICT GUARANTEE: If any validation errors exist, abort immediately with ZERO database mutations.
@@ -212,3 +224,4 @@ def import_inventory_csv(
         "validation_errors": [],
         "validation_errors_count": 0,
     }
+

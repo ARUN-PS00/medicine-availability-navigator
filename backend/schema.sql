@@ -56,3 +56,52 @@ CREATE INDEX IF NOT EXISTS idx_inventory_fac_med_date
 -- Index for date filtering
 CREATE INDEX IF NOT EXISTS idx_inventory_date 
     ON public.inventory (date DESC);
+
+--------------------------------------------------------------------------------
+-- 4. PHARMACY PROFILES TABLE & ROW LEVEL SECURITY (RLS) POLICIES
+--------------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.pharmacy_profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    facility_id VARCHAR(10) NOT NULL REFERENCES public.facilities(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+
+    CONSTRAINT uq_pharmacy_profiles_facility UNIQUE (facility_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pharmacy_profiles_facility_id
+    ON public.pharmacy_profiles (facility_id);
+
+ALTER TABLE public.pharmacy_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own pharmacy profile"
+    ON public.pharmacy_profiles
+    FOR SELECT
+    USING (auth.uid() = id);
+
+ALTER TABLE public.inventory ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "Public read inventory"
+    ON public.inventory
+    FOR SELECT
+    USING (true);
+
+CREATE POLICY "Pharmacy users modify own facility inventory"
+    ON public.inventory
+    FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.pharmacy_profiles
+            WHERE pharmacy_profiles.id = auth.uid()
+            AND pharmacy_profiles.facility_id = inventory.facility_id
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.pharmacy_profiles
+            WHERE pharmacy_profiles.id = auth.uid()
+            AND pharmacy_profiles.facility_id = inventory.facility_id
+        )
+    );
+

@@ -14,6 +14,20 @@ VALID_ROW_2 = "2024-07-02,F001,Hospital F001,PHC,12.9716,77.5946,M001,Paracetamo
 
 VALID_CSV_WITH_TARGET = VALID_CSV_HEADER + ",stockout_next_1_day\n" + VALID_ROW_1 + ",1\n"
 
+from backend.auth import get_current_pharmacy_user, PharmacyUser
+
+@pytest.fixture(autouse=True)
+def override_auth_dependency():
+    app.dependency_overrides[get_current_pharmacy_user] = lambda: PharmacyUser(
+        user_id="mock-user-uuid",
+        email="pharmacy@example.com",
+        facility_id="F001",
+        facility_name="Hospital F001",
+    )
+    yield
+    app.dependency_overrides.clear()
+
+
 
 def test_upload_valid_csv_success():
     csv_content = f"{VALID_CSV_HEADER}\n{VALID_ROW_1}\n{VALID_ROW_2}\n"
