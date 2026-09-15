@@ -26,25 +26,14 @@ export function renderMobileNav(containerElement) {
           <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
           <circle cx="12" cy="10" r="3"></circle>
         </svg>
-        <span class="mobile-nav-label">Facilities</span>
+        <span class="mobile-nav-label">Pharmacies</span>
       </a>
 
-      <a href="#/dashboard" class="mobile-nav-item" data-route="#/dashboard">
+      <a href="#/medicine/M001" class="mobile-nav-item" data-route="#/medicine">
         <svg class="mobile-nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="7" height="7"></rect>
-          <rect x="14" y="3" width="7" height="7"></rect>
-          <rect x="14" y="14" width="7" height="7"></rect>
-          <rect x="3" y="14" width="7" height="7"></rect>
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
         </svg>
-        <span class="mobile-nav-label">Dashboard</span>
-      </a>
-
-      <a href="#/profile" class="mobile-nav-item" data-route="#/profile">
-        <svg class="mobile-nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-        <span class="mobile-nav-label">Profile</span>
+        <span class="mobile-nav-label">Stockout Risk</span>
       </a>
     </nav>
   `;

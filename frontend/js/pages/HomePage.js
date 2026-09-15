@@ -148,8 +148,8 @@ export async function renderHomePage(containerElement) {
           <a href="#/search" class="btn btn-primary" style="background: #ffffff; color: var(--slate-900);">
             Check Medicine Availability Now
           </a>
-          <a href="#/auth" class="btn btn-ghost" style="color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3);">
-            Create Patient Account
+          <a href="#/pharmacies" class="btn btn-ghost" style="color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.3);">
+            Locate Nearby Pharmacies & Map
           </a>
         </div>
       </div>

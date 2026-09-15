@@ -515,3 +515,140 @@
   pointer-events: auto;
   animation: fadeIn 0.2s ease-out;
 }
+
+/* --- Location Indicator Pill & Tags (Stitch Screen 1) --- */
+.location-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--slate-100);
+  color: var(--slate-700);
+  border: 1px solid var(--slate-200);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.location-pill-btn:hover {
+  background-color: var(--slate-200);
+  border-color: var(--slate-300);
+}
+
+.location-pill-btn.loading {
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.location-pin-icon {
+  color: var(--primary-600);
+  flex-shrink: 0;
+}
+
+.location-label-text {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.location-status-tag {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.tag-exact {
+  background-color: var(--primary-50);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-200);
+}
+
+.tag-fallback {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* Fallback Notice Banner */
+.location-fallback-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.84375rem;
+  color: #92400e;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.location-fallback-banner strong {
+  color: #78350f;
+}
+
+/* --- Leaflet Map Custom Styling --- */
+.map-container-box {
+  width: 100%;
+  height: 480px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  background: var(--slate-100);
+}
+
+@media (min-width: 992px) {
+  .map-container-box {
+    height: 600px;
+  }
+}
+
+.leaflet-container {
+  font-family: var(--font-body);
+}
+
+/* Custom User Location Marker Pulse */
+.user-marker-pulse {
+  width: 18px;
+  height: 18px;
+  background: #0284c7;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.35);
+  animation: pulse-ring 2s infinite ease-out;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+}
+
+/* --- MAP Recommended Badge --- */
+.badge-recommended {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background-color: var(--primary-50);
+  color: var(--primary-700);
+  border: 1px solid var(--primary-200);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.badge-recommended svg {
+  color: var(--primary-600);
+}

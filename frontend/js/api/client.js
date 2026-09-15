@@ -258,6 +258,97 @@ class ApiClient {
       };
     });
   }
+
+  // Pharmacy Authentication API Methods
+  async loginPharmacy(email, password) {
+    try {
+      return await this.fetchWithTimeout('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+    } catch (e) {
+      console.warn("[MAP API Client] Login failed:", e.message);
+      throw e;
+    }
+  }
+
+  async registerPharmacy(facilityId, email, password) {
+    try {
+      return await this.fetchWithTimeout('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ facility_id: facilityId, email, password })
+      });
+    } catch (e) {
+      console.warn("[MAP API Client] Registration failed:", e.message);
+      throw e;
+    }
+  }
+
+  async getPharmacyMe(token) {
+    try {
+      return await this.fetchWithTimeout('/auth/me', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (e) {
+      console.warn("[MAP API Client] Fetch /auth/me failed:", e.message);
+      throw e;
+    }
+  }
+
+  // Protected Pharmacy Inventory Endpoints
+  async getPharmacyInventory(facilityId, token) {
+    try {
+      return await this.fetchWithTimeout(`/pharmacy/inventory/${encodeURIComponent(facilityId)}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (e) {
+      console.warn(`[MAP API Client] Fetch inventory for facility ${facilityId} failed:`, e.message);
+      throw e;
+    }
+  }
+
+  async uploadInventoryCsv(fileOrBlob, filename = 'inventory.csv', token = null) {
+    const formData = new FormData();
+    if (fileOrBlob instanceof File) {
+      formData.append('file', fileOrBlob);
+    } else {
+      const blob = new Blob([fileOrBlob], { type: 'text/csv' });
+      formData.append('file', blob, filename);
+    }
+
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s for upload
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/inventory/upload`, {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const json = await response.json();
+      if (!response.ok) {
+        const errorMsg = json.errors ? json.errors.join('\n') : (json.detail || json.message || 'Upload failed');
+        throw new Error(errorMsg);
+      }
+      return json;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("[MAP API Client] Inventory CSV Upload Error:", err.message);
+      throw err;
+    }
+  }
 }
 
 export const api = new ApiClient();

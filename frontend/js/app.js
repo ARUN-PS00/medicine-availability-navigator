@@ -19,6 +19,8 @@ import { renderMedicineDetailPage } from './pages/MedicineDetailPage.js';
 import { renderPharmaciesPage } from './pages/PharmaciesPage.js';
 import { renderProfilePage } from './pages/ProfilePage.js';
 import { renderNotificationsPage } from './pages/NotificationsPage.js';
+import { renderPartnerLoginPage } from './pages/PartnerLoginPage.js';
+import { renderPharmacyDashboardPage } from './pages/PharmacyDashboardPage.js';
 
 class Application {
   constructor() {
@@ -59,6 +61,10 @@ class Application {
       if (this.navbarContainer) renderNavbar(this.navbarContainer);
     });
 
+    state.subscribe('pharmacy_session_changed', () => {
+      if (this.navbarContainer) renderNavbar(this.navbarContainer);
+    });
+
     authService.subscribe(() => {
       if (this.navbarContainer) renderNavbar(this.navbarContainer);
     });
@@ -83,10 +89,15 @@ class Application {
     // 6. Pharmacies & Health Facilities Directory
     router.addRoute('/pharmacies', renderPharmaciesPage);
 
-    // 7. Client Profile & Preferences
+    // 7. Pharmacy Partner Portal & Dashboard
+    router.addRoute('/partner-login', renderPartnerLoginPage);
+    router.addRoute('/pharmacy-login', renderPartnerLoginPage);
+    router.addRoute('/pharmacy-dashboard', renderPharmacyDashboardPage);
+
+    // 8. Client Profile & Preferences
     router.addRoute('/profile', renderProfilePage, true);
 
-    // 8. Notifications / Alert Center
+    // 9. Notifications / Alert Center
     router.addRoute('/notifications', renderNotificationsPage);
 
     // Router after-hook: update active link highlights on both desktop and mobile bars

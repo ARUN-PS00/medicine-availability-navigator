@@ -6,6 +6,7 @@
 
 import { api } from '../api/client.js';
 import { state } from '../state.js';
+import { MOCK_FACILITIES } from '../api/mockData.js';
 import { renderStatusBadge } from '../components/StatusBadge.js';
 import { renderErrorAlert } from '../components/ErrorAlert.js';
 import { renderTableSkeleton } from '../components/SkeletonLoader.js';
@@ -242,33 +243,46 @@ export async function renderMedicineDetailPage(containerElement, params) {
               <th>Healthcare Facility</th>
               <th>Facility Type</th>
               <th>Current Stock</th>
-              <th>Days Remaining</th>
+              <th>Buffer Days</th>
               <th>Risk Level</th>
+              <th>Directions</th>
             </tr>
           </thead>
           <tbody>
-            ${availabilityList.map(item => `
-              <tr>
-                <td>
-                  <div style="font-weight: 600; color: var(--slate-900);">${escapeHtml(item.facility_name)}</div>
-                  <div style="font-size: 0.75rem; color: var(--slate-400);">${escapeHtml(item.address || 'Facility Node')}</div>
-                </td>
-                <td>
-                  <span class="badge badge-slate" style="font-size: 0.7rem;">${escapeHtml(item.facility_type)}</span>
-                </td>
-                <td>
-                  <strong style="font-size: 0.9375rem; color: ${item.closing_stock > 0 ? 'var(--slate-800)' : 'var(--status-stockout-text)'};">
-                    ${item.closing_stock} units
-                  </strong>
-                </td>
-                <td>
-                  <span style="font-weight: 500;">${item.days_of_stock_remaining > 0 ? item.days_of_stock_remaining + ' days' : '0 days'}</span>
-                </td>
-                <td>
-                  ${renderStatusBadge(item.risk)}
-                </td>
-              </tr>
-            `).join('')}
+            ${availabilityList.map(item => {
+              const facMatch = MOCK_FACILITIES.find(f => f.id === item.facility_id) || {};
+              const lat = facMatch.latitude || 12.9716;
+              const lng = facMatch.longitude || 77.5946;
+              const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
+              return `
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; color: var(--slate-900);">${escapeHtml(item.facility_name)}</div>
+                    <div style="font-size: 0.75rem; color: var(--slate-500);">${escapeHtml(item.address || 'Facility Node')}</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-slate" style="font-size: 0.7rem;">${escapeHtml(item.facility_type)}</span>
+                  </td>
+                  <td>
+                    <strong style="font-size: 0.9375rem; color: ${item.closing_stock > 0 ? 'var(--slate-800)' : 'var(--status-stockout-text)'};">
+                      ${item.closing_stock} units
+                    </strong>
+                  </td>
+                  <td>
+                    <span style="font-weight: 500;">${item.days_of_stock_remaining > 0 ? item.days_of_stock_remaining + ' days' : '0 days'}</span>
+                  </td>
+                  <td>
+                    ${renderStatusBadge(item.risk)}
+                  </td>
+                  <td>
+                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary" style="text-decoration: none; padding: 3px 8px; font-size: 0.72rem;">
+                      🧭 DIRECTIONS
+                    </a>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;

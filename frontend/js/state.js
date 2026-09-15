@@ -11,6 +11,7 @@ const KEY_SAVED = 'map_saved_medicines';
 const KEY_RECENT = 'map_recent_medicines';
 const KEY_NOTIFICATIONS = 'map_notifications';
 const KEY_SEARCH_HISTORY = 'map_search_history';
+const KEY_PHARMACY_SESSION = 'map_pharmacy_session';
 
 class AppState {
   constructor() {
@@ -19,6 +20,7 @@ class AppState {
     this.recentMedicineIds = this.load(KEY_RECENT, ['M001', 'M003', 'M005']);
     this.notifications = this.load(KEY_NOTIFICATIONS, MOCK_NOTIFICATIONS);
     this.searchHistory = this.load(KEY_SEARCH_HISTORY, ['Paracetamol', 'Amoxicillin', 'Metformin']);
+    this.pharmacySession = this.load(KEY_PHARMACY_SESSION, null);
   }
 
   load(key, fallback) {
@@ -198,6 +200,31 @@ class AppState {
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     });
+  }
+
+  // Pharmacy Authentication Session Management
+  getPharmacySession() {
+    return this.pharmacySession;
+  }
+
+  setPharmacySession(sessionData) {
+    this.pharmacySession = sessionData;
+    this.save(KEY_PHARMACY_SESSION, sessionData);
+    this.emit('pharmacy_session_changed', sessionData);
+  }
+
+  clearPharmacySession() {
+    this.pharmacySession = null;
+    this.save(KEY_PHARMACY_SESSION, null);
+    this.emit('pharmacy_session_changed', null);
+  }
+
+  getPharmacyToken() {
+    return this.pharmacySession ? this.pharmacySession.access_token : null;
+  }
+
+  isPharmacyLoggedIn() {
+    return !!(this.pharmacySession && this.pharmacySession.access_token);
   }
 }
 

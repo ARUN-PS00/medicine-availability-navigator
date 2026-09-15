@@ -46,6 +46,9 @@ export function renderNavbar(containerElement) {
           <a href="#/search" class="nav-link" data-route="#/search">Search Medicines</a>
           <a href="#/pharmacies" class="nav-link" data-route="#/pharmacies">Nearby Pharmacies & Map</a>
           <a href="#/medicine/M001" class="nav-link" data-route="#/medicine">Stockout Risk</a>
+          <a href="${state.isPharmacyLoggedIn() ? '#/pharmacy-dashboard' : '#/partner-login'}" class="nav-link" data-route="${state.isPharmacyLoggedIn() ? '#/pharmacy-dashboard' : '#/partner-login'}" style="color: var(--primary-700); font-weight: 600;">
+            ${state.isPharmacyLoggedIn() ? '🏥 Pharmacy Dashboard' : '🔑 Partner Portal'}
+          </a>
         </nav>
 
         <!-- Right Side Actions -->
@@ -82,6 +85,10 @@ export function renderNavbar(containerElement) {
         <a href="#/medicine/M001" class="mobile-drawer-link">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
           Stockout Risk Prototype
+        </a>
+        <a href="${state.isPharmacyLoggedIn() ? '#/pharmacy-dashboard' : '#/partner-login'}" class="mobile-drawer-link" style="color: var(--primary-700); font-weight: 600;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          ${state.isPharmacyLoggedIn() ? 'Pharmacy Dashboard' : 'Partner Portal (Login)'}
         </a>
       </div>
     </div>
